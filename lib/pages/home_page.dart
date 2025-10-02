@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// 1. Modelo de Dados (para simular os dados de um post)
+// Modelo de Dados (para simular os dados de um post)
 class BookPost {
   final String username;
   final String profileImageUrl;
@@ -66,7 +66,7 @@ final List<BookPost> posts = [
   ),
 ];
 
-// 3. A Tela Principal do Feed (HomePage)
+// Tela Principal do Feed (HomePage)
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
