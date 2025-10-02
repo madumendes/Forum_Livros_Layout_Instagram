@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Este é um placeholder para a página de destino da navegação.
-// Crie um arquivo forum_page.dart com este conteúdo para o código rodar.
 class ForumPage extends StatelessWidget {
   final String bookName;
   const ForumPage({super.key, required this.bookName});
@@ -15,7 +13,7 @@ class ForumPage extends StatelessWidget {
   }
 }
 
-// 1. Modelo de Dados para cada chat de grupo de leitura
+// Modelo de Dados para cada chat de grupo de leitura
 class ReadingGroupChat {
   final String bookTitle;
   final String bookCoverUrl;
@@ -34,7 +32,7 @@ class ReadingGroupChat {
   });
 }
 
-// 2. Dados Fictícios (Mock Data) para a lista de chats
+//  Dados Fictícios para a lista de chats
 final List<ReadingGroupChat> groups = [
   ReadingGroupChat(
     bookTitle: 'Clube do Livro: Dom Casmurro',
@@ -71,7 +69,7 @@ final List<ReadingGroupChat> groups = [
   ),
 ];
 
-// 3. A Tela Principal (GroupsPage)
+// A Tela Principal 
 class GroupsPage extends StatelessWidget {
   const GroupsPage({super.key});
 
