@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Imports das suas páginas (mantidos)
 import 'pages/login_page.dart';
 import 'pages/home_page.dart';
 import 'pages/groups_page.dart';
@@ -18,7 +17,6 @@ class BookForumApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'BookForum',
-      // Um tema mais neutro para combinar com o estilo do Instagram
       theme: ThemeData(
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.white,
@@ -65,16 +63,16 @@ class _MainPageState extends State<MainPage> {
       bottomNavigationBar: BottomNavigationBar(
         // --- Principais Mudanças Aqui ---
 
-        // 1. Remove os rótulos de texto
+        // Remove os rótulos de texto
         showSelectedLabels: false,
         showUnselectedLabels: false,
 
-        // 2. Define as cores dos ícones e o fundo
+        // Define as cores dos ícones e o fundo
         backgroundColor: Colors.white,
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.black54,
 
-        // 3. Mantém o tipo como 'fixed' para um visual estável
+        // fixed - estável
         type: BottomNavigationBarType.fixed,
         elevation: 1,
 
