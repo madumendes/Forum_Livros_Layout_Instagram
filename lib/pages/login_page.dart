@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../main.dart'; // Mantive seu import para a página principal
-
+import '../../main.dart'; 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
