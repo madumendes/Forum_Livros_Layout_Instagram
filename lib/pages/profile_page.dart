@@ -5,7 +5,7 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Usando DefaultTabController para gerenciar as abas
+    // gerenciar as abas
     return DefaultTabController(
       length: 3, // Número de abas (Resenhas, Salvos, Marcado)
       child: Scaffold(
