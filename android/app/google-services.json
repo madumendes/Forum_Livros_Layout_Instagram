@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "593729965156",
+    "project_id": "bookforumbrademo",
+    "storage_bucket": "bookforumbrademo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:593729965156:android:1437afbe6558f73d20a371",
+        "android_client_info": {
+          "package_name": "com.example.forum_livros"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbmkHtbOcZb3ZG4hktb-lKn50mD08_6Ks"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
