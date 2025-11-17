@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../services/firestore_service.dart'; // 1. Importe o serviço
 
-// Modelo de Dados (para simular os dados de um post)
+// --- SEU MODELO BOOKPOST ---
+// (A lista de dados fictícios foi removida)
 class BookPost {
   final String username;
   final String profileImageUrl;
@@ -10,6 +13,8 @@ class BookPost {
   final int likeCount;
   final int commentCount;
   final String timeAgo;
+  // (Opcional) Você pode querer adicionar um ID
+  // final String id;
 
   const BookPost({
     required this.username,
@@ -21,54 +26,37 @@ class BookPost {
     required this.commentCount,
     required this.timeAgo,
   });
+
+  // Construtor para converter um Documento do Firestore em um objeto BookPost
+  factory BookPost.fromFirestore(DocumentSnapshot doc) {
+    // Pega os dados do documento como um Mapa
+    Map data = doc.data() as Map<String, dynamic>;
+
+    // Retorna um objeto BookPost, usando valores padrão caso um campo não exista
+    return BookPost(
+      username: data['username'] ?? 'Usuário Anônimo',
+      profileImageUrl: data['profileImageUrl'] ?? '', // URL de imagem padrão?
+      bookCoverUrl: data['bookCoverUrl'] ?? '', // URL de imagem padrão?
+      bookTitle: data['bookTitle'] ?? 'Livro Desconhecido',
+      review: data['review'] ?? 'Sem resenha.',
+      likeCount: data['likeCount'] ?? 0,
+      commentCount: data['commentCount'] ?? 0,
+      timeAgo: data['timeAgo'] ?? 'agora', // Você pode querer calcular isso
+    );
+  }
 }
 
-// 2. Dados Fictícios (Mock Data) para preencher nosso feed
-final List<BookPost> posts = [
-  const BookPost(
-    username: 'ana_leitora',
-    profileImageUrl:
-        'https://i.pinimg.com/736x/c0/f0/45/c0f045ba3abb1d2a2ee294bbd3407b59.jpg',
-    bookCoverUrl:
-        'https://m.media-amazon.com/images/I/81XpG2iKTlL.jpg', // Dom Casmurro
-    bookTitle: 'Dom Casmurro',
-    review:
-        'Terminei de reler essa obra-prima! A dúvida sobre a traição de Capitu continua me assombrando. O que vocês acham?',
-    likeCount: 182,
-    commentCount: 47,
-    timeAgo: 'HÁ 2 HORAS',
-  ),
-  const BookPost(
-    username: 'V.E Schwab',
-    profileImageUrl:
-        'https://cdn.record.com.br/wp-content/uploads/2019/06/25200749/v-e-schwab.jpg',
-    bookCoverUrl:
-        'https://m.media-amazon.com/images/I/81zW6OSYdHL._SL1500_.jpg', // Dom Casmurro
-    bookTitle: 'Enterre nossos ossos à meia noite',
-    review:
-        'Meu novo livro já está disponível! Uma história sombria e envolvente sobre segredos e redenção. Espero que gostem!',
-    likeCount: 18000,
-    commentCount: 5900,
-    timeAgo: 'HÁ 1 HORAS',
-  ),
-  const BookPost(
-    username: 'carlos_santos',
-    profileImageUrl:
-        'https://marketplace.canva.com/ultEA/MAEzUIultEA/1/tl/canva-headshot-profile-picture-young-businessman-sit-in-kitchen-webcam-view-MAEzUIultEA.jpg',
-    bookCoverUrl:
-        'https://m.media-amazon.com/images/I/91g5gcjTxsL._UF1000,1000_QL80_.jpg', // 1984
-    bookTitle: '1984',
-    review:
-        'Um livro que continua mais atual do que nunca. A vigilância constante e a manipulação da verdade são temas que dão o que pensar.',
-    likeCount: 320,
-    commentCount: 98,
-    timeAgo: 'HÁ 5 HORAS',
-  ),
-];
-
-// Tela Principal do Feed (HomePage)
-class HomePage extends StatelessWidget {
+// --- TELA PRINCIPAL DO FEED ---
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // 2. Crie uma instância do serviço
+  final FirestoreService _firestoreService = FirestoreService();
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +68,7 @@ class HomePage extends StatelessWidget {
         title: const Text(
           'Feed',
           style: TextStyle(
-            fontFamily: 'Billabong', // Mesma fonte do logo anterior
+            fontFamily: 'Billabong',
             fontSize: 32.0,
             color: Colors.black,
           ),
@@ -89,29 +77,63 @@ class HomePage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.add_box_outlined, color: Colors.black),
             onPressed: () {
-              /* Navegar para a tela de criar post */
+              // TODO: Navegar para a tela de criar post
             },
           ),
           IconButton(
             icon: const Icon(Icons.favorite_border, color: Colors.black),
-            onPressed: () {
-              /* Ver notificações */
-            },
+            onPressed: () {/* Ver notificações */},
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: posts.length,
-        itemBuilder: (context, index) {
-          final post = posts[index];
-          return BookPostCard(post: post);
+      // 3. Substitua o ListView.builder por um StreamBuilder
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _firestoreService.getPostsStream(), // "Ouve" o stream de posts
+        builder: (context, snapshot) {
+          // Se estiver carregando dados
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // Se ocorrer um erro
+          if (snapshot.hasError) {
+            return Center(
+                child: Text('Erro ao carregar posts: ${snapshot.error}'));
+          }
+
+          // Se a coleção estiver vazia (sem dados)
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
+              child: Text(
+                'Nenhuma resenha ainda.\nSeja o primeiro a postar!',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            );
+          }
+
+          // Se tiver dados, construa a lista
+          return ListView.builder(
+            itemCount: snapshot.data!.docs.length, // O número de posts
+            itemBuilder: (context, index) {
+              // Pega o documento individual
+              DocumentSnapshot doc = snapshot.data!.docs[index];
+
+              // Converte o documento (dados do Firestore) para um objeto BookPost
+              final post = BookPost.fromFirestore(doc);
+
+              // Retorna o widget do card com os dados do post
+              return BookPostCard(post: post);
+            },
+          );
         },
       ),
     );
   }
 }
 
-// 4. Widget Reutilizável para o Card de Postagem
+// --- WIDGET REUTILIZÁVEL PARA O CARD DE POSTAGEM ---
+// (Nenhuma mudança foi necessária neste widget)
 class BookPostCard extends StatelessWidget {
   final BookPost post;
 
@@ -135,11 +157,13 @@ class BookPostCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 18,
+                  // Usa a imagem de perfil do post
                   backgroundImage: NetworkImage(post.profileImageUrl),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
+                    // Usa o nome de usuário do post
                     post.username,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
@@ -154,7 +178,7 @@ class BookPostCard extends StatelessWidget {
 
           // -- Imagem da Capa do Livro --
           Image.network(
-            post.bookCoverUrl,
+            post.bookCoverUrl, // Usa a capa do livro do post
             fit: BoxFit.cover,
             height: 400,
             width: double.infinity,
@@ -193,7 +217,7 @@ class BookPostCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${post.likeCount} curtidas',
+                  '${post.likeCount} curtidas', // Usa as curtidas do post
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4.0),
@@ -202,22 +226,22 @@ class BookPostCard extends StatelessWidget {
                     style: const TextStyle(color: Colors.black, fontSize: 14),
                     children: [
                       TextSpan(
-                        text: post.username,
+                        text: post.username, // Usa o usuário do post
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const TextSpan(text: ' '),
-                      TextSpan(text: post.review),
+                      TextSpan(text: post.review), // Usa a resenha do post
                     ],
                   ),
                 ),
                 const SizedBox(height: 8.0),
                 Text(
-                  'Ver todos os ${post.commentCount} comentários',
+                  'Ver todos os ${post.commentCount} comentários', // Usa os comentários do post
                   style: TextStyle(color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 4.0),
                 Text(
-                  post.timeAgo,
+                  post.timeAgo, // Usa o tempo do post
                   style: TextStyle(color: Colors.grey[600], fontSize: 10),
                 ),
               ],
