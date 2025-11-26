@@ -1,63 +1,178 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../services/firestore_service.dart';
+import '../widgets/universal_image.dart';
+import 'create_post_page.dart';
+import 'login_page.dart'; // Importante para o logout
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
-  // FUNÇÃO DE LOGOUT
-  Future<void> _signOut() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-    } catch (e) {
-      print("Erro ao fazer logout: $e");
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final FirestoreService _service = FirestoreService();
+  final String _anaPhoto =
+      'https://i.pinimg.com/736x/c0/f0/45/c0f045ba3abb1d2a2ee294bbd3407b59.jpg';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAndGenerateAnaPosts();
+  }
+
+  // --- VERIFICAÇÃO E GERAÇÃO AUTOMÁTICA ---
+  Future<void> _checkAndGenerateAnaPosts() async {
+    final user = FirebaseAuth.instance.currentUser;
+    // Verifica email ignorando maiúsculas/minúsculas
+    if (user?.email?.toLowerCase().trim() != 'ana@leitora.com') return;
+
+    // Verifica se a Ana já tem posts
+    final snapshot = await _service.getUserPostsStream(user!.uid).first;
+
+    if (snapshot.docs.isEmpty) {
+      final posts = [
+        {
+          't': 'Dom Casmurro',
+          'c': 'https://m.media-amazon.com/images/I/81XpG2iKTlL.jpg',
+          'r': 'Traiu ou não traiu? Eis a questão.'
+        },
+        {
+          't': '1984',
+          'c':
+              'https://m.media-amazon.com/images/I/91g5gcjTxsL._UF1000,1000_QL80_.jpg',
+          'r': 'Uma distopia assustadoramente real.'
+        },
+        {
+          't': 'O Hobbit',
+          'c': 'https://m.media-amazon.com/images/I/91b0C2YNSrL.jpg',
+          'r': 'Uma aventura inesquecível pela Terra Média.'
+        },
+        {
+          't': 'Duna',
+          'c': 'https://m.media-amazon.com/images/I/81ym3QUd3KL.jpg',
+          'r': 'O tempero deve fluir!'
+        },
+      ];
+
+      for (var p in posts) {
+        await _service.addPost(
+          p['t']!, // Título
+          p['r']!, // Resenha (Correção: adicionei o texto da resenha)
+          p['c']!, // Capa
+          'ana_leitora', // Nome
+          user.uid, // ID
+          _anaPhoto, // FOTO DA ANA
+        );
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Perfil da Ana configurado com sucesso!')));
+      }
     }
+  }
+
+  Future<void> _signOut() async {
+    await FirebaseAuth.instance.signOut();
+    // Redireciona para login se necessário, mas o AuthGate já cuida disso
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isAnaLeitora = user?.email?.toLowerCase().trim() == 'ana@leitora.com';
+
+    final displayName = isAnaLeitora
+        ? 'ana_leitora'
+        : (user?.displayName ?? user?.email?.split('@')[0] ?? 'Usuário');
+
     return DefaultTabController(
-      length: 3, // Número de abas
+      length: 3,
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: Colors.white,
-          elevation: 1,
-          title: const Text(
-            'ana_leitora', // TODO: Mudar para o usuário logado
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-          ),
+          elevation: 0,
+          title: Text(displayName,
+              style: const TextStyle(
+                  color: Colors.black, fontWeight: FontWeight.bold)),
           actions: [
             IconButton(
               icon: const Icon(Icons.add_box_outlined, color: Colors.black),
-              onPressed: () {/* TODO: Lógica de criar post */},
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const CreatePostPage())),
             ),
-
-            // BOTÃO DE LOGOUT
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.black),
-              onPressed: _signOut, // Chama a função de logout
+              onPressed: _signOut,
             ),
           ],
         ),
         body: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildProfileHeader(), // Seção 1: Foto e Estatísticas
-                    _buildProfileBio(), // Seção 2: Biografia
-                    _buildActionButtons(), // Seção 3: Botões de Ação
-                    const SizedBox(height: 16),
-                  ],
-                ),
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverToBoxAdapter(
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: isAnaLeitora
+                    ? const Stream.empty()
+                    : _service.getUserStream(user!.uid),
+                builder: (context, snapshot) {
+                  String photoUrl = '';
+                  String bio = 'Olá! Este é meu perfil de leituras.';
+
+                  if (isAnaLeitora) {
+                    photoUrl = _anaPhoto;
+                    bio =
+                        'Leitora Voraz\nAmante de fantasia e ficção científica. 📚✨';
+                  } else if (snapshot.hasData &&
+                      snapshot.data!.data() != null) {
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+                    photoUrl = data['photoUrl'] ?? '';
+                    bio = data['bio'] ?? bio;
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(photoUrl, isAnaLeitora),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(displayName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 16)),
+                            const SizedBox(height: 4),
+                            Text(bio),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {},
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.grey[200],
+                                foregroundColor: Colors.black,
+                                elevation: 0),
+                            child: const Text('Editar Perfil'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-            ];
-          },
+            ),
+          ],
           body: Column(
             children: [
-              // Seção 4: Abas de Conteúdo
               const TabBar(
                 labelColor: Colors.black,
                 unselectedLabelColor: Colors.grey,
@@ -65,18 +180,15 @@ class ProfilePage extends StatelessWidget {
                 tabs: [
                   Tab(icon: Icon(Icons.grid_on)),
                   Tab(icon: Icon(Icons.bookmark_border)),
-                  Tab(icon: Icon(Icons.person_pin_outlined)),
+                  Tab(icon: Icon(Icons.person_pin_outlined))
                 ],
               ),
-              // Seção 5: Conteúdo das Abas
               Expanded(
                 child: TabBarView(
                   children: [
-                    _buildPostsGrid(), // Grid de Resenhas (posts)
-                    const Center(child: Text('Livros salvos para ler depois.')),
-                    const Center(
-                      child: Text('Resenhas em que você foi marcado.'),
-                    ),
+                    _buildRealUserGrid(user!.uid),
+                    const Center(child: Text('Salvos')),
+                    const Center(child: Text('Marcados')),
                   ],
                 ),
               ),
@@ -87,26 +199,27 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // Widget para o cabeçalho com foto e estatísticas
-  Widget _buildProfileHeader() {
+  Widget _buildHeader(String photoUrl, bool isAna) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const CircleAvatar(
-            radius: 45,
-            backgroundImage: NetworkImage(
-              'https://i.pinimg.com/736x/c0/f0/45/c0f045ba3abb1d2a2ee294bbd3407b59.jpg',
+          ClipOval(
+            child: UniversalImage(
+              imageUrl: photoUrl,
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
             ),
           ),
+          const SizedBox(width: 20),
           Expanded(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatColumn('8', 'Resenhas'),
-                _buildStatColumn('1.2K', 'Leitores'),
-                _buildStatColumn('320', 'Seguindo'),
+                _statColumn(isAna ? '4' : '0', 'Resenhas'),
+                _statColumn(isAna ? '1.2K' : '0', 'Leitores'),
+                _statColumn(isAna ? '320' : '0', 'Seguindo'),
               ],
             ),
           ),
@@ -115,89 +228,42 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // Widget para a biografia
-  Widget _buildProfileBio() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Ana Clara',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          SizedBox(height: 4),
-          Text('Leitora Voraz', style: TextStyle(color: Colors.grey)),
-          SizedBox(height: 8),
-          Text(
-            'Amante de fantasia e ficção científica. Sempre em busca da próxima grande aventura literária. 📚✨',
-            style: TextStyle(fontSize: 14, height: 1.4),
-          ),
-        ],
-      ),
-    );
+  Widget _statColumn(String value, String label) {
+    return Column(children: [
+      Text(value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+      Text(label, style: const TextStyle(color: Colors.grey))
+    ]);
   }
 
-  // Widget "Editar Perfil", etc.
-  Widget _buildActionButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[200],
-                elevation: 0,
-              ),
-              child: const Text(
-                'Editar Perfil',
-                style: TextStyle(color: Colors.black),
-              ),
+  Widget _buildRealUserGrid(String uid) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _service.getUserPostsStream(uid),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final docs = snapshot.data!.docs;
+        if (docs.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: Text('Sem posts.', style: TextStyle(color: Colors.grey)),
             ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-    );
-  }
+          );
+        }
 
-  Widget _buildStatColumn(String value, String label) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-      ],
-    );
-  }
-
-  Widget _buildPostsGrid() {
-    // Lista de URLs de capas de livros para o grid
-    final List<String> bookCoverUrls = [
-      'https://m.media-amazon.com/images/I/81XpG2iKTlL.jpg',
-      'https://m.media-amazon.com/images/I/810fw8crP9L._UF1000,1000_QL80_.jpg',
-      'https://m.media-amazon.com/images/I/61xHkoffp3L._UF1000,1000_QL80_.jpg',
-      'https://i.pinimg.com/736x/76/55/e3/7655e334e78c7d77e72d1a5e613c8ebb.jpg',
-      'https://m.media-amazon.com/images/I/81FH6q0EqYS.jpg',
-      'https://m.media-amazon.com/images/I/61HgbCkcz4L._UF1000,1000_QL80_.jpg',
-      'https://m.media-amazon.com/images/I/91P9MlJrA3L.jpg',
-    ];
-
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 2,
-        mainAxisSpacing: 2,
-      ),
-      itemCount: bookCoverUrls.length,
-      itemBuilder: (context, index) {
-        return Image.network(bookCoverUrls[index], fit: BoxFit.cover);
+        return GridView.builder(
+          padding: const EdgeInsets.all(2),
+          itemCount: docs.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3, crossAxisSpacing: 2, mainAxisSpacing: 2),
+          itemBuilder: (ctx, i) {
+            final data = docs[i].data() as Map<String, dynamic>;
+            return UniversalImage(
+                imageUrl: data['bookCoverUrl'], fit: BoxFit.cover);
+          },
+        );
       },
     );
   }

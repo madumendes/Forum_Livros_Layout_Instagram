@@ -1,24 +1,20 @@
+import 'package:cloud_firestore/cloud_firestore.dart'; // Importante
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'firebase_options.dart';
+import 'widgets/universal_image.dart';
+import 'services/notification_service.dart';
 
-//  PÁGINAS
 import 'pages/login_page.dart';
 import 'pages/home_page.dart';
-import 'pages/groups_page.dart';
 import 'pages/profile_page.dart';
-
-// ARQUIVO GERADO PELO FLUTTERFIRE
-import 'firebase_options.dart';
+import 'pages/groups_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // INICIALIZA O FIREBASE
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await NotificationService().initNotifications();
   runApp(const BookForumApp());
 }
 
@@ -52,11 +48,7 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Se não tem dados (usuário deslogado)
-        if (!snapshot.hasData) {
-          return const LoginPage();
-        }
-
+        if (!snapshot.hasData) return const LoginPage();
         return const MainPage();
       },
     );
@@ -79,58 +71,86 @@ class _MainPageState extends State<MainPage> {
     ProfilePage(),
   ];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    const String userProfileImageUrl =
-        'https://i.pinimg.com/736x/c0/f0/45/c0f045ba3abb1d2a2ee294bbd3407b59.jpg';
+    final user = FirebaseAuth.instance.currentUser;
+    final isAna = user?.email == 'ana@leitora.com';
 
     return Scaffold(
       body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        backgroundColor: Colors.white,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.black54,
-        type: BottomNavigationBarType.fixed,
-        elevation: 1,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(_selectedIndex == 0 ? Icons.home : Icons.home_outlined),
-            label: 'Início',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              _selectedIndex == 1
-                  ? Icons.chat_bubble
-                  : Icons.chat_bubble_outline,
-            ),
-            label: 'Grupos',
-          ),
-          BottomNavigationBarItem(
-            label: 'Perfil',
-            icon: CircleAvatar(
-              radius: 14,
-              backgroundImage: const NetworkImage(userProfileImageUrl),
-              child: _selectedIndex == 2
-                  ? Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.black, width: 2),
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        ],
+      bottomNavigationBar: StreamBuilder<DocumentSnapshot>(
+        // Se for Ana, não precisa ouvir o banco. Se for usuário, ouve o documento dele.
+        stream: isAna || user == null
+            ? const Stream.empty()
+            : FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .snapshots(),
+        builder: (context, snapshot) {
+          // Lógica da Foto
+          String? photoUrl;
+
+          if (isAna) {
+            photoUrl =
+                'https://i.pinimg.com/736x/c0/f0/45/c0f045ba3abb1d2a2ee294bbd3407b59.jpg';
+          } else if (snapshot.hasData && snapshot.data!.data() != null) {
+            // Pega a foto Base64 do banco
+            photoUrl =
+                (snapshot.data!.data() as Map<String, dynamic>)['photoUrl'];
+          }
+
+          final hasPhoto = photoUrl != null && photoUrl.isNotEmpty;
+
+          return BottomNavigationBar(
+            showSelectedLabels: false,
+            showUnselectedLabels: false,
+            backgroundColor: Colors.white,
+            selectedItemColor: Colors.black,
+            unselectedItemColor: Colors.black54,
+            type: BottomNavigationBarType.fixed,
+            elevation: 1,
+            currentIndex: _selectedIndex,
+            onTap: (index) => setState(() => _selectedIndex = index),
+            items: [
+              BottomNavigationBarItem(
+                icon: Icon(
+                    _selectedIndex == 0 ? Icons.home : Icons.home_outlined),
+                label: 'Início',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(_selectedIndex == 1
+                    ? Icons.chat_bubble
+                    : Icons.chat_bubble_outline),
+                label: 'Grupos',
+              ),
+              BottomNavigationBarItem(
+                label: 'Perfil',
+                icon: Container(
+                  decoration: _selectedIndex == 2
+                      ? BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.black, width: 2))
+                      : null,
+                  child: ClipOval(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: hasPhoto
+                          ? UniversalImage(
+                              imageUrl: photoUrl, fit: BoxFit.cover)
+                          : Icon(
+                              _selectedIndex == 2
+                                  ? Icons.person
+                                  : Icons.person_outline,
+                              size: 24,
+                              color: Colors.black87),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

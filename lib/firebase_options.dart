@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'bookforumbrademo.firebasestorage.app',
     measurementId: 'G-7FY3G9QEZZ',
   );
+
 }

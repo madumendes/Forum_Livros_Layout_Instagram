@@ -1,173 +1,162 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../services/firestore_service.dart';
+import '../widgets/universal_image.dart';
 
-class ForumPage extends StatelessWidget {
-  final String bookName;
-  const ForumPage({super.key, required this.bookName});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(bookName)),
-      body: Center(child: Text('Fórum sobre $bookName')),
-    );
-  }
-}
-
-// Modelo de Dados para cada chat de grupo de leitura
-class ReadingGroupChat {
-  final String bookTitle;
-  final String bookCoverUrl;
-  final String lastMessage;
-  final String lastMessageBy;
-  final String timestamp;
-  final bool isUnread;
-
-  ReadingGroupChat({
-    required this.bookTitle,
-    required this.bookCoverUrl,
-    required this.lastMessage,
-    required this.lastMessageBy,
-    required this.timestamp,
-    this.isUnread = false,
-  });
-}
-
-//  Dados Fictícios para a lista de chats
-final List<ReadingGroupChat> groups = [
-  ReadingGroupChat(
-    bookTitle: 'Clube do Livro: Dom Casmurro',
-    bookCoverUrl: 'https://m.media-amazon.com/images/I/81XpG2iKTlL.jpg',
-    lastMessage: 'Acho que a Capitu traiu, sim!',
-    lastMessageBy: 'Carlos',
-    timestamp: '5m',
-    isUnread: true,
-  ),
-  ReadingGroupChat(
-    bookTitle: 'Discussão: Matéria Escura',
-    bookCoverUrl:
-        'https://m.media-amazon.com/images/I/61xHkoffp3L._UF1000,1000_QL80_.jpg',
-    lastMessage: 'Qual a parte favorita de vocês no livro?',
-    lastMessageBy: 'Vanessa',
-    timestamp: '2h',
-  ),
-  ReadingGroupChat(
-    bookTitle: 'Teorias sobre Powerless',
-    bookCoverUrl:
-        'https://m.media-amazon.com/images/I/51J57kOMjwL._SY445_SX342_ControlCacheEqualizer_.jpg',
-    lastMessage: 'Adorei sua resenha com a foto segurando o livro, Ana!',
-    lastMessageBy: 'Marina',
-    timestamp: '4h',
-  ),
-  ReadingGroupChat(
-    bookTitle: 'Análise de 1984',
-    bookCoverUrl:
-        'https://m.media-amazon.com/images/I/91g5gcjTxsL._UF1000,1000_QL80_.jpg',
-    lastMessage: 'É um final bem impactante mesmo.',
-    lastMessageBy: 'Bia',
-    timestamp: '2d',
-    isUnread: true,
-  ),
-];
-
-// A Tela Principal 
 class GroupsPage extends StatelessWidget {
   const GroupsPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        title: const Text(
-          'Grupos e Bate-papos',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+  // Função unificada para CRIAR ou EDITAR
+  void _showGroupDialog(BuildContext context,
+      {String? docId, String? currentName, String? currentDesc}) {
+    final nameController = TextEditingController(text: currentName);
+    final descController = TextEditingController(text: currentDesc);
+    final isEditing = docId != null;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isEditing ? 'Editar Grupo' : 'Novo Grupo'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(hintText: 'Nome do Grupo'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(hintText: 'Descrição'),
+            ),
+          ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.black),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar')),
+          ElevatedButton(
             onPressed: () {
-              /* Lógica para criar novo grupo/chat */
+              if (nameController.text.isNotEmpty) {
+                if (isEditing) {
+                  // ATUALIZAR
+                  FirestoreService().updateGroup(
+                      docId, nameController.text, descController.text);
+                } else {
+                  // CRIAR
+                  final user = FirebaseAuth.instance.currentUser;
+                  FirestoreService().createGroup(nameController.text,
+                      descController.text, user?.uid ?? 'anonimo');
+                }
+                Navigator.pop(context);
+              }
             },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // -- Barra de Busca --
-          _buildSearchBar(),
-
-          // -- Lista de Conversas --
-          Expanded(
-            child: ListView.builder(
-              itemCount: groups.length,
-              itemBuilder: (context, index) {
-                final group = groups[index];
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 8.0,
-                    horizontal: 16.0,
-                  ),
-                  leading: CircleAvatar(
-                    radius: 28,
-                    backgroundImage: NetworkImage(group.bookCoverUrl),
-                  ),
-                  title: Text(
-                    group.bookTitle,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: group.isUnread ? Colors.black : Colors.grey[800],
-                    ),
-                  ),
-                  subtitle: Text(
-                    '${group.lastMessageBy}: ${group.lastMessage}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: group.isUnread
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: group.isUnread ? Colors.black : Colors.grey[600],
-                    ),
-                  ),
-                  trailing: Text(
-                    group.timestamp,
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ForumPage(bookName: group.bookTitle),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+            child: Text(isEditing ? 'Salvar' : 'Criar'),
           ),
         ],
       ),
     );
   }
 
-  // Widget auxiliar para a barra de busca
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Pesquisar',
-          prefixIcon: const Icon(Icons.search),
-          filled: true,
-          fillColor: Colors.grey[200],
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: EdgeInsets.zero,
-        ),
+  @override
+  Widget build(BuildContext context) {
+    final service = FirestoreService();
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Grupos de Leitura',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline, color: Colors.black),
+            onPressed: () => _showGroupDialog(context),
+          )
+        ],
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: service.getGroupsStream(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError)
+            return const Center(child: Text('Erro ao carregar grupos.'));
+          if (snapshot.connectionState == ConnectionState.waiting)
+            return const Center(child: CircularProgressIndicator());
+
+          final docs = snapshot.data!.docs;
+
+          if (docs.isEmpty) {
+            return const Center(child: Text('Nenhum grupo criado ainda.'));
+          }
+
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index];
+              final data = doc.data() as Map<String, dynamic>;
+              final isOwner = data['ownerId'] == currentUserId;
+
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                child: ListTile(
+                  leading: ClipOval(
+                    child: UniversalImage(
+                        imageUrl: data['imageUrl'],
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover),
+                  ),
+                  title: Text(data['name'] ?? 'Grupo',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(data['description'] ?? ''),
+
+                  // MENU DE OPÇÕES (EDITAR/EXCLUIR)
+                  trailing: isOwner
+                      ? PopupMenuButton(
+                          icon: const Icon(Icons.more_vert),
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(children: [
+                                Icon(Icons.edit, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Text('Editar')
+                              ]),
+                            ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(children: [
+                                Icon(Icons.delete, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Excluir',
+                                    style: TextStyle(color: Colors.red))
+                              ]),
+                            ),
+                          ],
+                          onSelected: (value) {
+                            if (value == 'delete') {
+                              service.deleteGroup(doc.id);
+                            } else if (value == 'edit') {
+                              _showGroupDialog(context,
+                                  docId: doc.id,
+                                  currentName: data['name'],
+                                  currentDesc: data['description']);
+                            }
+                          },
+                        )
+                      : const Icon(Icons.chevron_right),
+
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Entrando no grupo...')));
+                  },
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
