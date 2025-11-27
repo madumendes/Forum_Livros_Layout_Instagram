@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
 import 'create_post_page.dart';
 import '../widgets/universal_image.dart';
-import 'comments_page.dart'; // <--- IMPORTANTE: Importe a página de comentários
+import 'comments_page.dart'; 
 
-// --- MODELO ATUALIZADO ---
 class BookPost {
   final String id;
   final String username;
@@ -16,7 +15,7 @@ class BookPost {
   final String review;
   final String timeAgo;
   final int likeCount;
-  final int commentCount; // Adicionado contador de comentários
+  final int commentCount; 
   final List<dynamic> likedBy;
 
   BookPost.fromDoc(DocumentSnapshot doc)
@@ -98,7 +97,6 @@ class HomePage extends StatelessWidget {
   }
 }
 
-// --- CARD DE POSTAGEM ---
 class BookPostCard extends StatelessWidget {
   final BookPost post;
 
@@ -147,14 +145,13 @@ class BookPostCard extends StatelessWidget {
             ),
           ),
 
-          // Imagem
+          // imagem
           UniversalImage(
               imageUrl: post.bookCoverUrl,
               height: 400,
               width: double.infinity,
               fit: BoxFit.cover),
 
-          // AÇÕES (LIKE, COMMENT, SAVE)
           Row(
             children: [
               // Botão Like
@@ -167,7 +164,7 @@ class BookPostCard extends StatelessWidget {
                   }
                 },
               ),
-              // Botão Comentário (CONECTADO!)
+              // Botão Comentário 
               IconButton(
                   icon: const Icon(Icons.chat_bubble_outline),
                   onPressed: () {
@@ -197,7 +194,7 @@ class BookPostCard extends StatelessWidget {
             ],
           ),
 
-          // Legenda e Comentários
+          // legenda e comentários
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: Column(
