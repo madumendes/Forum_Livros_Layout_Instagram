@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../services/firestore_service.dart'; // Importante
+import '../services/firestore_service.dart'; 
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -44,7 +44,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     setState(() => _isLoading = true);
     try {
-      // 1. Cria a conta no Auth
+      // Cria a conta no Auth
       UserCredential userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
@@ -53,17 +53,17 @@ class _RegisterPageState extends State<RegisterPage> {
 
       String? base64Image;
 
-      // 2. Converte imagem
+      // Converte imagem
       if (_selectedImage != null) {
         List<int> imageBytes = await _selectedImage!.readAsBytes();
         base64Image = base64Encode(imageBytes);
       }
 
-      // 3. Salva APENAS o nome no Auth (A foto vai pro banco)
+      // Salva o nome no Auth (A foto vai pro banco)
       await userCredential.user
           ?.updateDisplayName(_usernameController.text.trim());
 
-      // 4. Salva TUDO (Incluindo a foto grande) no Firestore
+      // Salva no Firestore
       await FirestoreService().saveUser(
           userCredential.user!.uid,
           _usernameController.text.trim(),
