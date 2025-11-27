@@ -8,9 +8,8 @@ class FirestoreService {
   final CollectionReference groups =
       FirebaseFirestore.instance.collection('groups');
 
-  // --- POSTS (CORRIGIDO) ---
+  // posts
 
-  // Agora aceita 'review' (o texto do post)
   Future<void> addPost(String title, String review, String coverBase64,
       String author, String userId, String profileImage) {
     return posts.add({
@@ -44,7 +43,7 @@ class FirestoreService {
     return posts.doc(docId).update({'review': newReview});
   }
 
-  // --- INTERAÇÕES ---
+  // interações
   Future<void> toggleLike(String postId, String userId) async {
     final docRef = posts.doc(postId);
     final doc = await docRef.get();
@@ -81,7 +80,7 @@ class FirestoreService {
     }
   }
 
-  // --- COMENTÁRIOS ---
+  // comments
   Future<void> addComment(String postId, String text, String uid,
       String username, String photoUrl) {
     return posts.doc(postId).collection('comments').add({
@@ -103,7 +102,7 @@ class FirestoreService {
         .snapshots();
   }
 
-  // --- USUÁRIOS ---
+  // usuários
   Future<void> saveUser(
       String uid, String username, String email, String? photoBase64) {
     return users.doc(uid).set({
@@ -119,7 +118,7 @@ class FirestoreService {
     return users.doc(uid).snapshots();
   }
 
-  // --- GRUPOS ---
+  // grupos
   Future<void> createGroup(String name, String description, String ownerId) {
     return groups.add({
       'name': name,
