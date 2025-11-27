@@ -5,7 +5,7 @@ import '../services/firestore_service.dart';
 import '../widgets/universal_image.dart';
 
 class CommentsPage extends StatefulWidget {
-  final String postId; // Precisamos saber qual post estamos comentando
+  final String postId; 
 
   const CommentsPage({super.key, required this.postId});
 
@@ -21,7 +21,7 @@ class _CommentsPageState extends State<CommentsPage> {
     if (_commentController.text.trim().isEmpty) return;
 
     final user = FirebaseAuth.instance.currentUser;
-    // Se for a Ana, usa dados fixos, senão pega do Auth
+    // se for a Ana, usa dados fixos, senão pega do Auth
     final isAna = user?.email == 'ana@leitora.com';
 
     final username = isAna ? 'ana_leitora' : (user?.displayName ?? 'Usuário');
@@ -47,7 +47,7 @@ class _CommentsPageState extends State<CommentsPage> {
       ),
       body: Column(
         children: [
-          // LISTA DE COMENTÁRIOS
+          // lista de comentarios
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _service.getCommentsStream(widget.postId),
@@ -98,7 +98,6 @@ class _CommentsPageState extends State<CommentsPage> {
             ),
           ),
 
-          // CAMPO DE TEXTO (RODAPÉ)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
