@@ -18,20 +18,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final _titleController = TextEditingController();
   final _reviewController = TextEditingController();
 
-  File? _selectedImage; // Foto manual
-  String? _foundCoverUrl; // Capa da API
+  File? _selectedImage; 
+  String? _foundCoverUrl; 
   String? _foundAuthor; // Autor da API
 
   bool _isLoading = false;
   bool _isSearching = false;
 
-  // --- BUSCA NA GOOGLE BOOKS API ---
+  // busca na API google
   Future<void> _searchBook(String query) async {
     if (query.isEmpty) return;
 
     setState(() {
       _isSearching = true;
-      _selectedImage = null; // Limpa a imagem manual se for buscar
+      _selectedImage = null; // limpa a imagem manual se for buscar
       _foundCoverUrl = null;
     });
 
@@ -52,12 +52,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
               _foundCoverUrl = thumb.replaceFirst('http:', 'https:');
             }
 
-            // Tenta pegar o autor
+            // tenta buscar o autor
             if (bookInfo['authors'] != null) {
               _foundAuthor = bookInfo['authors'][0];
             }
 
-            // Atualiza o título com o nome oficial
+            // atualiza o título
             _titleController.text = bookInfo['title'];
           });
 
@@ -77,7 +77,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     }
   }
 
-  // --- SELEÇÃO MANUAL (CÂMERA/GALERIA) ---
+  // seleção da câmera/galeria
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile =
@@ -86,7 +86,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       setState(() {
         _selectedImage = File(pickedFile.path);
         _foundCoverUrl =
-            null; // Limpa a busca da API se o usuário escolher foto manual
+            null; // limpa a busca da API se o usuário escolher foto manual (camera ou galeria)
       });
     }
   }
@@ -117,7 +117,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
   }
 
-  // --- ENVIAR POST ---
+  // enviar
   void _post() async {
     // Validação: Tem título? Tem imagem (Manual OU API)? Tem resenha?
     if (_titleController.text.isEmpty ||
@@ -133,7 +133,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       final user = FirebaseAuth.instance.currentUser;
       final userId = user?.uid ?? 'anonimo';
 
-      // 1. Define a imagem final (Base64 ou URL)
+    
       String finalImageString = '';
       if (_foundCoverUrl != null) {
         finalImageString = _foundCoverUrl!; // Usa a URL da API
@@ -142,7 +142,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
         finalImageString = base64Encode(imageBytes); // Usa o Base64 da Câmera
       }
 
-      // 2. Lógica do Nome e Foto de Perfil
       String username = 'Leitor';
       String userProfileImage = '';
 
@@ -162,7 +161,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         }
       }
 
-      // 3. Salva no Firestore
+      // salva no firestore
       await FirestoreService().addPost(
           _titleController.text,
           _reviewController.text,
@@ -221,7 +220,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
               ),
               const SizedBox(height: 16),
 
-              // --- ÁREA DA IMAGEM (Preview) ---
+              // area da imagem
               GestureDetector(
                 onTap: () => _showOpcoesFoto(context),
                 child: Container(
@@ -241,7 +240,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
               const SizedBox(height: 16),
 
-              // --- CAMPO RESENHA ---
+              // resenha escrita
               TextField(
                   controller: _reviewController,
                   maxLines: 6,
