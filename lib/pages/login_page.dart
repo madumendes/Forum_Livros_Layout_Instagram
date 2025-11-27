@@ -28,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      // O AuthGate no main.dart vai nos levar para a Home automaticamente
+      // O AuthGate no main.dart leva para a Home automaticamente
     } on FirebaseAuthException catch (e) {
       if (mounted) _showErrorDialog(e.message ?? 'Erro desconhecido');
     } finally {
