@@ -10,7 +10,7 @@ class UserProvider extends ChangeNotifier {
   // Setter para definir o usuário após o login
   void setUser(User user) {
     _user = user;
-    notifyListeners(); // Avisa todas as telas que o usuário mudou
+    notifyListeners(); // Avisa as telas que o usuário mudou
   }
 
   // Função de Logout
