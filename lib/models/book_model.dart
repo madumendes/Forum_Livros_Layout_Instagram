@@ -1,12 +1,12 @@
 class Book {
-  // --- CAMPOS QUE VÊM DA API (JAVA) ---
+  // campos que vem do Java (não mais utlizados)
   final int? id;
   final String title;
   final String author;
   final String coverImageUrl;
   final bool available; // <--- Este é o campo que estava faltando
 
-  // --- CAMPOS PARA O VISUAL INSTAGRAM (ADAPTADOS) ---
+  // visual do instagram
   final String username;
   final String profileImageUrl;
   final String review;
@@ -31,7 +31,7 @@ class Book {
     this.timeAgo = 'agora',
   });
 
-  // Converte JSON do Java -> Modelo do App
+  // Converte JSON do Java -não mais usado
   factory Book.fromJson(Map<String, dynamic> json) {
     return Book(
       // 1. Dados Reais da API
@@ -47,14 +47,14 @@ class Book {
     );
   }
 
-  // Envia Modelo do App -> JSON para o Java
+  // Envia Modelo do App - não mais usado
   Map<String, dynamic> toJson() {
     return {
       'title': title,
       'author': author,
       'coverImageUrl': coverImageUrl,
       'communityId': 1, // Valor fixo exigido pelo Java DTO
-      'available': available, // Envia para o Java
+      'available': available, // Envia para o Java - não mais usado
     };
   }
 }
