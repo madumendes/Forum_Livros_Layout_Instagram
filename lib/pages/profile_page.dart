@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
 import '../widgets/universal_image.dart';
 import 'create_post_page.dart';
-import 'login_page.dart'; // Importante para o logout
+import 'login_page.dart'; 
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -24,7 +24,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _checkAndGenerateAnaPosts();
   }
 
-  // --- VERIFICAÇÃO E GERAÇÃO AUTOMÁTICA ---
+  // verificação - se for o usuário da Ana (demo) gera posts automaticamente
   Future<void> _checkAndGenerateAnaPosts() async {
     final user = FirebaseAuth.instance.currentUser;
     // Verifica email ignorando maiúsculas/minúsculas
