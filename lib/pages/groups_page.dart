@@ -7,7 +7,7 @@ import '../widgets/universal_image.dart';
 class GroupsPage extends StatelessWidget {
   const GroupsPage({super.key});
 
-  // Função unificada para CRIAR ou EDITAR
+  // criar ou editar
   void _showGroupDialog(BuildContext context,
       {String? docId, String? currentName, String? currentDesc}) {
     final nameController = TextEditingController(text: currentName);
@@ -112,7 +112,7 @@ class GroupsPage extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text(data['description'] ?? ''),
 
-                  // MENU DE OPÇÕES (EDITAR/EXCLUIR)
+                  // botão editar ou excluir
                   trailing: isOwner
                       ? PopupMenuButton(
                           icon: const Icon(Icons.more_vert),
